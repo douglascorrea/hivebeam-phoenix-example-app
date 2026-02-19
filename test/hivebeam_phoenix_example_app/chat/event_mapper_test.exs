@@ -25,6 +25,22 @@ defmodule HivebeamPhoenixExampleApp.Chat.EventMapperTest do
     assert EventMapper.extract_stream_text(event.payload) == "chunk-1"
   end
 
+  test "extracts stream text from list-based content updates" do
+    payload = %{
+      "request_id" => "req-1",
+      "update" => %{
+        "content" => [
+          %{
+            "type" => "content",
+            "content" => %{"type" => "text", "text" => "```sh\n177.135.93.9\n```\n"}
+          }
+        ]
+      }
+    }
+
+    assert EventMapper.extract_stream_text(payload) == "```sh\n177.135.93.9\n```\n"
+  end
+
   test "maps approval requested and resolved events" do
     thread = Thread.new(%{"provider" => "codex"})
 

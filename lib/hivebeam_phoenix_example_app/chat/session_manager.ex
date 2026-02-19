@@ -126,7 +126,9 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
       client_name = client_name(thread_id)
       prompt_opts = if is_integer(timeout_ms), do: [timeout_ms: timeout_ms], else: []
 
-      case state.client_module.prompt(client_name, request_id, text, prompt_opts) do
+      case safe_client_call(fn ->
+             state.client_module.prompt(client_name, request_id, text, prompt_opts)
+           end) do
         {:ok, payload} ->
           broadcast_thread(updated_thread)
           broadcast_threads()
@@ -156,7 +158,7 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
   def handle_call({:cancel_prompt, thread_id}, _from, state) do
     with {:ok, thread} <- ThreadStore.get_thread(thread_id),
          {:ok, _thread, state} <- ensure_thread_active(thread, state) do
-      case state.client_module.cancel(client_name(thread_id)) do
+      case safe_client_call(fn -> state.client_module.cancel(client_name(thread_id)) end) do
         {:ok, payload} -> {:reply, {:ok, payload}, state}
         {:error, reason} -> {:reply, {:error, reason}, state}
       end
@@ -169,7 +171,9 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
   def handle_call({:approve_request, thread_id, approval_ref, decision}, _from, state) do
     with {:ok, thread} <- ThreadStore.get_thread(thread_id),
          {:ok, _thread, state} <- ensure_thread_active(thread, state) do
-      case state.client_module.approve(client_name(thread_id), approval_ref, decision, []) do
+      case safe_client_call(fn ->
+             state.client_module.approve(client_name(thread_id), approval_ref, decision, [])
+           end) do
         {:ok, payload} ->
           {:ok, updated_thread} =
             ThreadStore.update_thread(thread_id, fn current ->
@@ -237,7 +241,7 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
       ThreadStore.update_thread(thread_id, fn thread ->
         thread
         |> Thread.put_connected(false)
-        |> Thread.put_error(reason)
+        |> maybe_put_disconnect_error(reason)
       end)
     )
 
@@ -259,7 +263,7 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
           ThreadStore.update_thread(thread_id, fn thread ->
             thread
             |> Thread.put_connected(false)
-            |> Thread.put_error({kind, reason})
+            |> maybe_put_process_down_error(kind, reason)
           end)
         )
 
@@ -427,13 +431,10 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
 
   defp maybe_close_gateway_session(state, thread) do
     if is_binary(thread.gateway_session_key) and thread.gateway_session_key != "" do
-      state.client_module.close(client_name(thread.id), [])
+      safe_client_call(fn -> state.client_module.close(client_name(thread.id), []) end)
     else
       {:ok, %{closed: true}}
     end
-  rescue
-    _ ->
-      {:error, :close_failed}
   end
 
   defp client_start_opts(thread, owner_pid) do
@@ -454,7 +455,10 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
     cwd = attrs[:cwd] || attrs["cwd"] || GatewayConfig.default_cwd()
 
     approval_mode =
-      GatewayConfig.normalize_approval_mode(attrs[:approval_mode] || attrs["approval_mode"])
+      attrs[:approval_mode] ||
+        attrs["approval_mode"] ||
+        GatewayConfig.default_approval_mode()
+        |> GatewayConfig.normalize_approval_mode()
 
     title = attrs[:title] || attrs["title"] || "#{String.capitalize(provider)} Thread"
 
@@ -498,6 +502,46 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
   end
 
   defp maybe_broadcast_thread(_other), do: :ok
+
+  defp safe_client_call(fun) when is_function(fun, 0) do
+    try do
+      fun.()
+    rescue
+      error ->
+        {:error, error}
+    catch
+      :exit, reason ->
+        {:error, {:client_call_exit, reason}}
+    end
+  end
+
+  defp maybe_put_disconnect_error(thread, reason) do
+    if benign_disconnect_reason?(reason) do
+      thread
+    else
+      Thread.put_error(thread, reason)
+    end
+  end
+
+  defp maybe_put_process_down_error(thread, _kind, reason) do
+    if benign_process_exit_reason?(reason) do
+      thread
+    else
+      Thread.put_error(thread, reason)
+    end
+  end
+
+  defp benign_disconnect_reason?(%{reason: {:remote, 1000, _}}), do: true
+  defp benign_disconnect_reason?(%{reason: {:local, 1000, _}}), do: true
+  defp benign_disconnect_reason?({:remote, 1000, _}), do: true
+  defp benign_disconnect_reason?({:local, 1000, _}), do: true
+  defp benign_disconnect_reason?(:normal), do: true
+  defp benign_disconnect_reason?(_), do: false
+
+  defp benign_process_exit_reason?(:normal), do: true
+  defp benign_process_exit_reason?({:shutdown, :normal}), do: true
+  defp benign_process_exit_reason?(:shutdown), do: true
+  defp benign_process_exit_reason?(_), do: false
 
   defp broadcast_thread(%Thread{} = thread) do
     Phoenix.PubSub.broadcast(@pubsub, thread_topic(thread.id), {:thread_updated, thread})

@@ -71,6 +71,10 @@ defmodule HivebeamPhoenixExampleAppWeb.ChatComponents do
             <dd>{String.upcase(@active_thread.provider)}</dd>
           </div>
           <div>
+            <dt>Approval Mode</dt>
+            <dd>{@active_thread.approval_mode}</dd>
+          </div>
+          <div>
             <dt>Status</dt>
             <dd>{format_status(@active_thread.status)}</dd>
           </div>

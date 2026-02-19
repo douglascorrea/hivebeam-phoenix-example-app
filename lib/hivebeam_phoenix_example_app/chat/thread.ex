@@ -79,9 +79,10 @@ defmodule HivebeamPhoenixExampleApp.Chat.Thread do
         GatewayConfig.default_cwd()
 
     approval_mode =
-      GatewayConfig.normalize_approval_mode(
-        Map.get(attrs, :approval_mode) || Map.get(attrs, "approval_mode")
-      )
+      Map.get(attrs, :approval_mode) ||
+        Map.get(attrs, "approval_mode") ||
+        GatewayConfig.default_approval_mode()
+        |> GatewayConfig.normalize_approval_mode()
 
     id =
       Map.get(attrs, :id) ||

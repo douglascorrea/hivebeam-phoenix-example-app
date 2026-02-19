@@ -100,9 +100,10 @@ defmodule HivebeamPhoenixExampleApp.Chat.EventMapper do
 
     direct =
       update["text"] ||
-        get_in(update, ["content", "text"]) ||
-        get_in(update, ["delta", "text"]) ||
-        get_in(update, ["content", "delta", "text"]) ||
+        safe_get_path(update, ["content", "text"]) ||
+        safe_get_path(update, ["delta", "text"]) ||
+        safe_get_path(update, ["content", "delta", "text"]) ||
+        extract_text_from_content(update["content"]) ||
         payload["text"]
 
     case direct do
@@ -117,8 +118,8 @@ defmodule HivebeamPhoenixExampleApp.Chat.EventMapper do
 
     payload["request_id"] ||
       payload["requestId"] ||
-      get_in(payload, ["update", "request_id"]) ||
-      get_in(payload, ["update", "requestId"])
+      safe_get_path(payload, ["update", "request_id"]) ||
+      safe_get_path(payload, ["update", "requestId"])
   end
 
   def extract_request_id(_payload), do: nil
@@ -171,6 +172,31 @@ defmodule HivebeamPhoenixExampleApp.Chat.EventMapper do
 
   defp normalize_value(value) when is_map(value), do: normalize_payload(value)
   defp normalize_value(value), do: value
+
+  defp safe_get_path(value, []), do: value
+
+  defp safe_get_path(value, [key | rest]) when is_map(value) do
+    case Map.get(value, key) do
+      nil -> nil
+      next -> safe_get_path(next, rest)
+    end
+  end
+
+  defp safe_get_path(_value, _path), do: nil
+
+  defp extract_text_from_content(content) when is_binary(content), do: content
+
+  defp extract_text_from_content(content) when is_map(content) do
+    content["text"] ||
+      safe_get_path(content, ["content", "text"]) ||
+      safe_get_path(content, ["delta", "text"])
+  end
+
+  defp extract_text_from_content(content) when is_list(content) do
+    Enum.find_value(content, &extract_text_from_content/1)
+  end
+
+  defp extract_text_from_content(_content), do: nil
 
   defp normalize_key(key) when is_binary(key), do: key
   defp normalize_key(key) when is_atom(key), do: Atom.to_string(key)
