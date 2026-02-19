@@ -1,0 +1,665 @@
+/* See the Tailwind configuration guide for advanced usage
+   https://tailwindcss.com/docs/configuration */
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Sora:wght@500;700&display=swap");
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/hivebeam_phoenix_example_app_web";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+/* daisyUI Tailwind Plugin. You can update this file by fetching the latest version with:
+   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
+   Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
+@plugin "../vendor/daisyui" {
+  themes: false;
+}
+
+/* daisyUI theme plugin. You can update this file by fetching the latest version with:
+  curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
+  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
+  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
+@plugin "../vendor/daisyui-theme" {
+  name: "dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: oklch(30.33% 0.016 252.42);
+  --color-base-200: oklch(25.26% 0.014 253.1);
+  --color-base-300: oklch(20.15% 0.012 254.09);
+  --color-base-content: oklch(97.807% 0.029 256.847);
+  --color-primary: oklch(58% 0.233 277.117);
+  --color-primary-content: oklch(96% 0.018 272.314);
+  --color-secondary: oklch(58% 0.233 277.117);
+  --color-secondary-content: oklch(96% 0.018 272.314);
+  --color-accent: oklch(60% 0.25 292.717);
+  --color-accent-content: oklch(96% 0.016 293.756);
+  --color-neutral: oklch(37% 0.044 257.287);
+  --color-neutral-content: oklch(98% 0.003 247.858);
+  --color-info: oklch(58% 0.158 241.966);
+  --color-info-content: oklch(97% 0.013 236.62);
+  --color-success: oklch(60% 0.118 184.704);
+  --color-success-content: oklch(98% 0.014 180.72);
+  --color-warning: oklch(66% 0.179 58.318);
+  --color-warning-content: oklch(98% 0.022 95.277);
+  --color-error: oklch(58% 0.253 17.585);
+  --color-error-content: oklch(96% 0.015 12.422);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1.5px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@plugin "../vendor/daisyui-theme" {
+  name: "light";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(98% 0 0);
+  --color-base-200: oklch(96% 0.001 286.375);
+  --color-base-300: oklch(92% 0.004 286.32);
+  --color-base-content: oklch(21% 0.006 285.885);
+  --color-primary: oklch(70% 0.213 47.604);
+  --color-primary-content: oklch(98% 0.016 73.684);
+  --color-secondary: oklch(55% 0.027 264.364);
+  --color-secondary-content: oklch(98% 0.002 247.839);
+  --color-accent: oklch(0% 0 0);
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(44% 0.017 285.786);
+  --color-neutral-content: oklch(98% 0 0);
+  --color-info: oklch(62% 0.214 259.815);
+  --color-info-content: oklch(97% 0.014 254.604);
+  --color-success: oklch(70% 0.14 182.503);
+  --color-success-content: oklch(98% 0.014 180.72);
+  --color-warning: oklch(66% 0.179 58.318);
+  --color-warning-content: oklch(98% 0.022 95.277);
+  --color-error: oklch(58% 0.253 17.585);
+  --color-error-content: oklch(96% 0.015 12.422);
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1.5px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* Use the data attribute for dark mode */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session],
+[data-phx-teleported-src] {
+  display: contents;
+}
+
+:root {
+  --hb-bg: #f2f5f7;
+  --hb-bg-gradient: radial-gradient(circle at 12% 12%, #d8efe9 0%, rgba(216, 239, 233, 0) 35%),
+    radial-gradient(circle at 88% 18%, #f7e8d5 0%, rgba(247, 232, 213, 0) 42%),
+    linear-gradient(160deg, #f2f5f7 0%, #ebf0f4 100%);
+  --hb-panel: #ffffff;
+  --hb-panel-2: #f7fafc;
+  --hb-border: #d7e0e7;
+  --hb-border-strong: #b8c7d3;
+  --hb-text: #10212a;
+  --hb-text-soft: #476172;
+  --hb-text-muted: #6d8798;
+  --hb-brand: #0f766e;
+  --hb-brand-strong: #0f4f58;
+  --hb-brand-soft: #d4f0ea;
+  --hb-user: #0b7ab6;
+  --hb-assistant: #f0f6fa;
+  --hb-approval: #fff4df;
+  --hb-danger: #c94a35;
+  --hb-success: #137a58;
+  --hb-offline: #8f2b2b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hb-bg: #091117;
+    --hb-bg-gradient: radial-gradient(circle at 14% 14%, rgba(21, 97, 112, 0.32) 0%, rgba(21, 97, 112, 0) 42%),
+      radial-gradient(circle at 82% 16%, rgba(115, 82, 44, 0.28) 0%, rgba(115, 82, 44, 0) 40%),
+      linear-gradient(160deg, #091117 0%, #0d1a23 100%);
+    --hb-panel: #111e29;
+    --hb-panel-2: #162634;
+    --hb-border: #264154;
+    --hb-border-strong: #38607a;
+    --hb-text: #e4f0f7;
+    --hb-text-soft: #a4bfce;
+    --hb-text-muted: #7e9aaa;
+    --hb-brand: #5ad1c4;
+    --hb-brand-strong: #8be1d8;
+    --hb-brand-soft: #163840;
+    --hb-user: #1e8fd8;
+    --hb-assistant: #1a2b38;
+    --hb-approval: #41331e;
+    --hb-danger: #f17862;
+    --hb-success: #3ac590;
+    --hb-offline: #d77777;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--hb-text);
+  background: var(--hb-bg-gradient);
+  font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.mono {
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+.muted {
+  color: var(--hb-text-muted);
+}
+
+.hb-app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hb-topbar {
+  height: 74px;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--hb-border);
+  background: color-mix(in srgb, var(--hb-panel) 90%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.hb-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.hb-title {
+  margin: 0;
+  font-family: "Sora", "Avenir Next", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.hb-subtitle {
+  margin: 0;
+  color: var(--hb-text-soft);
+  font-size: 0.78rem;
+}
+
+.hb-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.hb-provider-pill {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 500;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--hb-border-strong);
+  background: var(--hb-brand-soft);
+  color: var(--hb-brand-strong);
+}
+
+.hb-provider-pill[data-provider="claude"] {
+  background: color-mix(in srgb, #f4dcc4 86%, var(--hb-panel));
+  color: color-mix(in srgb, #955a2f 82%, var(--hb-text));
+}
+
+.hb-icon-btn {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--hb-border);
+  color: var(--hb-text-soft);
+  background: var(--hb-panel);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 140ms ease;
+}
+
+.hb-icon-btn:hover {
+  border-color: var(--hb-border-strong);
+  color: var(--hb-text);
+}
+
+.mobile-only {
+  display: inline-flex;
+}
+
+.hb-main-grid {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.hb-side-slot {
+  position: fixed;
+  top: 74px;
+  bottom: 0;
+  width: min(86vw, 320px);
+  z-index: 30;
+  transition: transform 220ms ease;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+}
+
+.hb-side-left {
+  left: 0;
+  transform: translateX(-102%);
+}
+
+.hb-side-right {
+  right: 0;
+  transform: translateX(102%);
+}
+
+.hb-side-slot.is-open {
+  transform: translateX(0);
+}
+
+.hb-panel-left,
+.hb-panel-right {
+  height: 100%;
+  background: color-mix(in srgb, var(--hb-panel) 96%, transparent);
+  border-inline: 1px solid var(--hb-border);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.hb-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.hb-panel-head h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--hb-text-soft);
+}
+
+.hb-inspector-grid {
+  margin: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.hb-inspector-grid div {
+  border: 1px solid var(--hb-border);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--hb-panel-2);
+}
+
+.hb-inspector-grid dt {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hb-text-muted);
+}
+
+.hb-inspector-grid dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+}
+
+.hb-badge {
+  font-size: 0.74rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.52rem;
+  border: 1px solid transparent;
+}
+
+.hb-badge.online {
+  background: color-mix(in srgb, var(--hb-success) 16%, transparent);
+  border-color: color-mix(in srgb, var(--hb-success) 48%, transparent);
+  color: var(--hb-success);
+}
+
+.hb-badge.offline {
+  background: color-mix(in srgb, var(--hb-offline) 14%, transparent);
+  border-color: color-mix(in srgb, var(--hb-offline) 48%, transparent);
+  color: var(--hb-offline);
+}
+
+.hb-action-row {
+  margin-top: 0.8rem;
+}
+
+.hb-primary-btn,
+.hb-secondary-btn {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 0.65rem;
+  border: 1px solid transparent;
+  padding: 0.5rem 0.75rem;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.hb-primary-btn {
+  background: linear-gradient(145deg, var(--hb-brand), color-mix(in srgb, var(--hb-brand) 66%, #072f32));
+  color: #effffd;
+}
+
+.hb-primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--hb-brand) 34%, transparent);
+}
+
+.hb-primary-btn:disabled,
+.hb-secondary-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.hb-secondary-btn {
+  border-color: var(--hb-border-strong);
+  color: var(--hb-text-soft);
+  background: var(--hb-panel-2);
+}
+
+.hb-secondary-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--hb-brand);
+  color: var(--hb-brand-strong);
+}
+
+.hb-event-box {
+  margin-top: 1rem;
+  border: 1px solid var(--hb-border);
+  border-radius: 0.85rem;
+  background: var(--hb-panel-2);
+  padding: 0.7rem;
+}
+
+.hb-event-box h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hb-text-soft);
+}
+
+.hb-event-box ul {
+  margin: 0;
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.hb-event-box li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.77rem;
+}
+
+.hb-new-thread {
+  border: 1px solid var(--hb-border);
+  border-radius: 0.9rem;
+  background: var(--hb-panel-2);
+  padding: 0.7rem;
+  margin-bottom: 0.9rem;
+}
+
+.hb-new-thread label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--hb-text-soft);
+  margin-bottom: 0.35rem;
+}
+
+.hb-new-thread-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.45rem;
+}
+
+.hb-select {
+  width: 100%;
+  border-radius: 0.62rem;
+  border: 1px solid var(--hb-border-strong);
+  padding: 0.48rem 0.55rem;
+  background: var(--hb-panel);
+  color: var(--hb-text);
+  font-size: 0.82rem;
+}
+
+.hb-thread-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hb-thread-item {
+  width: 100%;
+  text-align: left;
+  border-radius: 0.8rem;
+  border: 1px solid var(--hb-border);
+  background: var(--hb-panel-2);
+  padding: 0.62rem 0.68rem;
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.hb-thread-item:hover {
+  border-color: var(--hb-border-strong);
+  transform: translateY(-1px);
+}
+
+.hb-thread-item.active {
+  border-color: var(--hb-brand);
+  background: color-mix(in srgb, var(--hb-brand-soft) 42%, var(--hb-panel));
+}
+
+.hb-thread-line-1,
+.hb-thread-line-2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hb-thread-line-1 strong {
+  font-size: 0.82rem;
+}
+
+.hb-thread-line-2 {
+  margin-top: 0.25rem;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--hb-text-soft);
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+}
+
+.dot.online {
+  background: var(--hb-success);
+}
+
+.dot.offline {
+  background: var(--hb-offline);
+}
+
+.hb-center {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.hb-message-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid var(--hb-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--hb-panel) 97%, transparent);
+  padding: 0.75rem;
+}
+
+.hb-empty-state {
+  margin: auto;
+  max-width: 26rem;
+  text-align: center;
+}
+
+.hb-empty-state h3 {
+  font-family: "Sora", sans-serif;
+  margin: 0 0 0.3rem;
+}
+
+.hb-empty-state p {
+  margin: 0;
+  color: var(--hb-text-soft);
+  font-size: 0.88rem;
+}
+
+.hb-message {
+  border-radius: 0.9rem;
+  border: 1px solid var(--hb-border);
+  padding: 0.62rem 0.78rem;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+}
+
+.hb-message header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.38rem;
+  font-size: 0.73rem;
+}
+
+.hb-message p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.87rem;
+}
+
+.hb-user {
+  background: color-mix(in srgb, var(--hb-user) 17%, var(--hb-panel));
+  border-color: color-mix(in srgb, var(--hb-user) 50%, var(--hb-border));
+}
+
+.hb-assistant {
+  background: var(--hb-assistant);
+}
+
+.hb-approval {
+  background: var(--hb-approval);
+  border-color: color-mix(in srgb, #df9a39 42%, var(--hb-border));
+}
+
+.hb-system {
+  background: var(--hb-panel-2);
+}
+
+.hb-approval-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.hb-composer {
+  border: 1px solid var(--hb-border-strong);
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--hb-panel) 98%, transparent);
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.hb-composer textarea {
+  width: 100%;
+  border: none;
+  resize: vertical;
+  min-height: 3rem;
+  max-height: 9rem;
+  background: transparent;
+  color: var(--hb-text);
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.hb-composer textarea:focus {
+  outline: none;
+}
+
+.hb-composer-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (min-width: 1024px) {
+  .mobile-only {
+    display: none;
+  }
+
+  .hb-topbar {
+    padding: 0 1.25rem;
+  }
+
+  .hb-main-grid {
+    grid-template-columns: minmax(245px, 280px) minmax(0, 1fr) minmax(270px, 320px);
+  }
+
+  .hb-side-slot {
+    position: static;
+    transform: none !important;
+    width: auto;
+    box-shadow: none;
+  }
+
+  .hb-side-slot .hb-panel-left,
+  .hb-side-slot .hb-panel-right {
+    border-radius: 0;
+    border-inline: none;
+  }
+}
