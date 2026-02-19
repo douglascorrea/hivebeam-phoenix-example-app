@@ -1,3 +1,10 @@
+## Hivebeam example-app notes
+
+- This app is a Phoenix LiveView UI client for Hivebeam gateway.
+- It depends on the local SDK path dependency: `../hivebeam-client-elixir`.
+- Preserve compatibility with gateway `/v1` contracts when changing chat/session flows.
+- Run `mix precommit` before finishing substantive changes.
+
 This is a web application written using the Phoenix web framework.
 
 ## Project guidelines
