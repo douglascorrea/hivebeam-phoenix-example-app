@@ -45,7 +45,8 @@ Open [http://localhost:4000/chat](http://localhost:4000/chat).
 
 ```bash
 mix format --check-formatted
-mix test
+mix compile --warnings-as-errors
+HIVEBEAM_GATEWAY_REPO=../hivebeam HIVEBEAM_FAKE_ACP_CMD=../hivebeam-client-elixir/test/support/fake_acp mix test
 ```
 
 Integration smoke (`test/integration/chat_gateway_integration_test.exs`) boots a real gateway process and uses the deterministic fake ACP command from:

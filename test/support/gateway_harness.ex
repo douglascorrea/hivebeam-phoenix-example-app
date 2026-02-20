@@ -27,6 +27,7 @@ defmodule HivebeamPhoenixExampleApp.TestSupport.GatewayHarness do
   def init(opts) do
     gateway_repo = resolve_gateway_repo(opts)
     fake_acp = resolve_fake_acp_path(opts)
+    workspace_root = Path.expand("../../..", __DIR__)
     token = Keyword.get(opts, :token, "phoenix-it-token")
     port = free_port()
     bind = "127.0.0.1:#{port}"
@@ -43,7 +44,9 @@ defmodule HivebeamPhoenixExampleApp.TestSupport.GatewayHarness do
         "HIVEBEAM_GATEWAY_BIND=#{shell_quote(bind)}",
         "HIVEBEAM_GATEWAY_DATA_DIR=#{shell_quote(data_dir)}",
         "HIVEBEAM_CODEX_ACP_CMD=#{shell_quote(fake_acp)}",
-        "HIVEBEAM_CLAUDE_AGENT_ACP_CMD=#{shell_quote(fake_acp)}"
+        "HIVEBEAM_CLAUDE_AGENT_ACP_CMD=#{shell_quote(fake_acp)}",
+        "HIVEBEAM_GATEWAY_SANDBOX_DEFAULT_ROOT=#{shell_quote(workspace_root)}",
+        "HIVEBEAM_GATEWAY_SANDBOX_ALLOWED_ROOTS=#{shell_quote(sandbox_roots(gateway_repo, workspace_root))}"
       ]
       |> Enum.join(" ")
 
@@ -191,5 +194,18 @@ defmodule HivebeamPhoenixExampleApp.TestSupport.GatewayHarness do
   defp shell_quote(value) do
     escaped = value |> to_string() |> String.replace("'", "'\"'\"'")
     "'#{escaped}'"
+  end
+
+  defp sandbox_roots(gateway_repo, workspace_root) do
+    [Path.expand(gateway_repo), Path.expand(workspace_root)]
+    |> Enum.uniq()
+    |> Enum.join(path_list_separator())
+  end
+
+  defp path_list_separator do
+    case :os.type() do
+      {:win32, _} -> ";"
+      _ -> ":"
+    end
   end
 end

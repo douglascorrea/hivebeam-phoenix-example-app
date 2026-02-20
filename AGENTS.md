@@ -4,6 +4,7 @@
 - It depends on the local SDK path dependency: `../hivebeam-client-elixir`.
 - Preserve compatibility with gateway `/v1` contracts when changing chat/session flows.
 - Run `mix precommit` before finishing substantive changes.
+- For CI parity, run `mix format --check-formatted`, `mix compile --warnings-as-errors`, and `HIVEBEAM_GATEWAY_REPO=../hivebeam HIVEBEAM_FAKE_ACP_CMD=../hivebeam-client-elixir/test/support/fake_acp mix test`.
 
 This is a web application written using the Phoenix web framework.
 
