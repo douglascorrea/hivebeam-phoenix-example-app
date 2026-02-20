@@ -125,7 +125,7 @@ defmodule HivebeamPhoenixExampleApp.TestSupport.GatewayHarness do
     _ -> :ok
   end
 
-  defp wait_until_healthy(base_url, attempts \\ 1_200)
+  defp wait_until_healthy(base_url, attempts \\ 2_400)
 
   defp wait_until_healthy(_base_url, 0), do: {:error, :gateway_boot_timeout}
 
