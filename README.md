@@ -32,6 +32,8 @@ This project depends on the SDK via:
 - `HIVEBEAM_CLIENT_WS_RECONNECT_MS` (default `1000`)
 - `HIVEBEAM_CLIENT_POLL_INTERVAL_MS` (default `500`)
 
+If gateway sandbox roots do not include your app directory, set `HIVEBEAM_DEFAULT_CWD` to an allowed root. The app also retries once using gateway `allowed_roots` when session create returns `cwd_outside_sandbox`.
+
 ## Run
 
 ```bash

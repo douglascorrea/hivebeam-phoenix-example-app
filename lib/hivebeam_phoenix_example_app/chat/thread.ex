@@ -136,6 +136,13 @@ defmodule HivebeamPhoenixExampleApp.Chat.Thread do
     |> touch()
   end
 
+  @spec clear_error(t()) :: t()
+  def clear_error(%__MODULE__{} = thread) do
+    thread
+    |> Map.put(:last_error, nil)
+    |> touch()
+  end
+
   @spec add_user_message(t(), String.t(), String.t()) :: t()
   def add_user_message(%__MODULE__{} = thread, request_id, text)
       when is_binary(request_id) and is_binary(text) do

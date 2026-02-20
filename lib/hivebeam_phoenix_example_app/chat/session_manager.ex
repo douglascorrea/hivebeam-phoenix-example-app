@@ -8,6 +8,7 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
   alias HivebeamPhoenixExampleApp.Chat.Thread
   alias HivebeamPhoenixExampleApp.Chat.ThreadStore
   alias HivebeamPhoenixExampleApp.GatewayConfig
+  alias HivebeamClient.Error, as: HivebeamClientError
 
   @registry HivebeamPhoenixExampleApp.Chat.ClientRegistry
   @pubsub HivebeamPhoenixExampleApp.PubSub
@@ -223,9 +224,13 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
       when is_binary(thread_id) do
     maybe_broadcast_thread(
       ThreadStore.update_thread(thread_id, fn thread ->
-        thread
-        |> Thread.put_connected(true)
-        |> Thread.put_status(:idle)
+        if has_gateway_session?(thread) do
+          thread
+          |> Thread.put_connected(true)
+          |> Thread.put_status(:idle)
+        else
+          thread
+        end
       end)
     )
 
@@ -239,9 +244,13 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
       when is_binary(thread_id) do
     maybe_broadcast_thread(
       ThreadStore.update_thread(thread_id, fn thread ->
-        thread
-        |> Thread.put_connected(false)
-        |> maybe_put_disconnect_error(reason)
+        if has_gateway_session?(thread) do
+          thread
+          |> Thread.put_connected(false)
+          |> maybe_put_disconnect_error(reason)
+        else
+          thread
+        end
       end)
     )
 
@@ -356,8 +365,37 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
   end
 
   defp create_and_attach_session(thread, state) do
-    session_attrs =
-      GatewayConfig.create_session_attrs(thread.provider, thread.cwd, thread.approval_mode)
+    case create_session_and_attach(thread, state, thread.cwd) do
+      {:ok, updated_thread} ->
+        broadcast_thread(updated_thread)
+        broadcast_threads()
+        {:ok, updated_thread, state}
+
+      {:error, reason} ->
+        case maybe_retry_with_fallback_cwd(thread, state, reason) do
+          {:ok, updated_thread} ->
+            broadcast_thread(updated_thread)
+            broadcast_threads()
+            {:ok, updated_thread, state}
+
+          {:error, final_reason} ->
+            next_state = teardown_runtime(thread.id, state)
+
+            maybe_broadcast_thread(
+              ThreadStore.update_thread(thread.id, fn current ->
+                current
+                |> Thread.put_connected(false)
+                |> Thread.put_error(final_reason)
+              end)
+            )
+
+            {:error, final_reason, next_state}
+        end
+    end
+  end
+
+  defp create_session_and_attach(thread, state, cwd) do
+    session_attrs = GatewayConfig.create_session_attrs(thread.provider, cwd, thread.approval_mode)
 
     with {:ok, session} <-
            state.client_module.create_session(client_name(thread.id), session_attrs),
@@ -367,31 +405,58 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
          {:ok, updated_thread} <-
            ThreadStore.update_thread(thread.id, fn current ->
              current
+             |> Map.put(:cwd, Path.expand(cwd))
              |> Thread.put_gateway_session_key(session_key)
              |> Thread.put_connected(true)
              |> Thread.put_status(:idle)
+             |> Thread.clear_error()
            end) do
-      broadcast_thread(updated_thread)
-      broadcast_threads()
-      {:ok, updated_thread, state}
+      {:ok, updated_thread}
     else
       {:error, reason} ->
-        maybe_broadcast_thread(
-          ThreadStore.update_thread(thread.id, fn current -> Thread.put_error(current, reason) end)
-        )
-
-        {:error, reason, state}
+        {:error, reason}
 
       _ ->
-        reason = :invalid_gateway_session_key
-
-        maybe_broadcast_thread(
-          ThreadStore.update_thread(thread.id, fn current -> Thread.put_error(current, reason) end)
-        )
-
-        {:error, reason, state}
+        {:error, :invalid_gateway_session_key}
     end
   end
+
+  defp maybe_retry_with_fallback_cwd(thread, state, reason) do
+    case fallback_cwd_from_error(reason) do
+      nil ->
+        {:error, reason}
+
+      fallback_cwd ->
+        expanded_fallback = Path.expand(fallback_cwd)
+
+        if expanded_fallback == Path.expand(thread.cwd) do
+          {:error, reason}
+        else
+          create_session_and_attach(thread, state, expanded_fallback)
+        end
+    end
+  end
+
+  defp fallback_cwd_from_error(%HivebeamClientError{message: "cwd_outside_sandbox"} = error) do
+    details = if is_map(error.details), do: error.details, else: %{}
+    detail_block = Map.get(details, "details") || Map.get(details, :details) || details
+
+    allowed_roots =
+      Map.get(detail_block, "allowed_roots") || Map.get(detail_block, :allowed_roots)
+
+    allowed_roots
+    |> List.wrap()
+    |> Enum.find_value(fn
+      root when is_binary(root) ->
+        root = String.trim(root)
+        if root == "", do: nil, else: Path.expand(root)
+
+      _ ->
+        nil
+    end)
+  end
+
+  defp fallback_cwd_from_error(_reason), do: nil
 
   defp teardown_runtime(thread_id, state) do
     case Map.pop(state.runtimes, thread_id) do
@@ -521,6 +586,10 @@ defmodule HivebeamPhoenixExampleApp.Chat.SessionManager do
     else
       Thread.put_error(thread, reason)
     end
+  end
+
+  defp has_gateway_session?(thread) do
+    is_binary(thread.gateway_session_key) and thread.gateway_session_key != ""
   end
 
   defp maybe_put_process_down_error(thread, _kind, reason) do
